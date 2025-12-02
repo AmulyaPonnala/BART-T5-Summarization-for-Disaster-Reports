@@ -55,16 +55,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Initialize session state
-if 'pipeline' not in st.session_state:
-    with st.spinner("Loading AI models... This may take a minute..."):
-        st.session_state.pipeline = VoiceToSummaryPipeline(
-            whisper_model="base",
-            summarizer_model="facebook/bart-large-cnn",
-            use_t5=False
-        )
-    st.success("Models loaded successfully!")
-
 # Main header
 st.markdown('<h1 class="main-header">🎙️ Voice Disaster Report Summarizer</h1>', unsafe_allow_html=True)
 st.markdown("""
@@ -149,9 +139,11 @@ if uploaded_file is not None:
     st.audio(uploaded_file, format=uploaded_file.type)
     
 elif audio_bytes is not None:
-    # st.audio_input() returns UploadedFile, need to read bytes
+    # st.audio_input() returns UploadedFile; read bytes for processing
     audio_to_process = audio_bytes.read()
     audio_source = "recorded_audio.wav"
+    # Reset stream position so audio can be played back in the UI
+    audio_bytes.seek(0)
     st.audio(audio_bytes, format="audio/wav")
 
 # Process button
@@ -159,6 +151,22 @@ if audio_to_process is not None:
     if st.button("🚀 Process Voice → Summaries", type="primary", use_container_width=True):
         with st.spinner("🔄 Processing... This may take a minute..."):
             try:
+                # Ensure pipeline matches current configuration; re-initialize if needed
+                current_config = {
+                    "whisper_model": whisper_model,
+                    "summarizer_model": summarizer_model,
+                    "use_t5": use_t5,
+                }
+
+                if (
+                    "pipeline" not in st.session_state
+                    or "pipeline_config" not in st.session_state
+                    or st.session_state.pipeline is None
+                    or st.session_state.pipeline_config != current_config
+                ):
+                    st.session_state.pipeline = VoiceToSummaryPipeline(**current_config)
+                    st.session_state.pipeline_config = current_config
+
                 # Process through pipeline
                 transcribed_text, alert, short, detailed = st.session_state.pipeline.process_audio_bytes(
                     audio_to_process,

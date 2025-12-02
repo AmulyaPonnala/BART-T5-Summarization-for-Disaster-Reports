@@ -6,7 +6,7 @@ Connects speech recognition with summarization
 import os
 import sys
 import logging
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 from pathlib import Path
 
 # Handle imports for both direct execution and module import
@@ -118,7 +118,7 @@ class VoiceToSummaryPipeline:
 
 # Convenience function for direct use
 def voice_to_summary(
-    audio_file: str,
+    audio_file: Union[str, bytes],
     whisper_model: str = "base",
     summarizer_model: str = "facebook/bart-large-cnn",
     use_t5: bool = False,
@@ -128,7 +128,7 @@ def voice_to_summary(
     Convenience function to process audio file
     
     Args:
-        audio_file: Path to audio file or bytes
+        audio_file: Path to audio file or raw audio bytes
         whisper_model: Whisper model size
         summarizer_model: Summarization model name
         use_t5: Whether to use T5
