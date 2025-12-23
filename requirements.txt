@@ -3,21 +3,10 @@ torch>=2.0.0
 transformers>=4.30.0
 streamlit>=1.28.0
 
-# Speech Recognition
-openai-whisper>=20231117
-
-# Audio Processing
-sounddevice>=0.4.6
-scipy>=1.10.0
-
 # Evaluation
 rouge-score>=0.1.2
 
 # Utilities
 numpy>=1.24.0
 pandas>=2.0.0
-
-# Optional: For better audio handling
-pydub>=0.25.1
-ffmpeg-python>=0.2.0
 

@@ -1,14 +1,13 @@
 """
-Models package: Speech-to-Text and Summarization
+Models package: Summarization and Structured Reports
 """
 
-from .speech_to_text import SpeechToText, transcribe_audio
 from .summarizer import DisasterSummarizer, generate_all_summaries
+from .structured_report import StructuredReportGenerator
 
 __all__ = [
-    'SpeechToText',
-    'transcribe_audio',
     'DisasterSummarizer',
-    'generate_all_summaries'
+    'generate_all_summaries',
+    'StructuredReportGenerator'
 ]
 

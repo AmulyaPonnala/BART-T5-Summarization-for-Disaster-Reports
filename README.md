@@ -1,13 +1,12 @@
-# 🎙️ Voice-Enabled Disaster Report Summarization System
+# 📝 BART/T5 Summarization for Disaster Reports
 
-**Speech → Text → BART/T5 → Multi-Level Summaries**
+**Text → BART/T5 → Multi-Level Summaries**
 
-A production-ready NLP system that transforms voice recordings of disaster reports into actionable multi-level summaries using state-of-the-art transformer models.
+A production-ready NLP system that transforms disaster report text into actionable multi-level summaries using state-of-the-art transformer models (BART/T5).
 
 ## 🌟 Features
 
-- **🎤 Voice Input**: Record or upload audio files (WAV, MP3, M4A, FLAC, OGG)
-- **🗣️ Speech Recognition**: Powered by OpenAI Whisper (offline, accurate, free)
+- **📝 Text Input**: Paste or type disaster report text
 - **📝 Multi-Level Summarization**:
   - 🔔 **1-line Alert**: Emergency notification
   - 📰 **Short Public Summary**: Media/public brief
@@ -19,11 +18,9 @@ A production-ready NLP system that transforms voice recordings of disaster repor
 ## 🧱 System Architecture
 
 ```
-Microphone Input / Audio File
+Text Input (Disaster Report)
         ↓
-Speech Recognition (Whisper ASR)
-        ↓
-Text Cleaning & Preprocessing
+Text Preprocessing & Cleaning
         ↓
 T5 / BART Summarization
         ↓
@@ -57,11 +54,6 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-**Note**: For audio processing, you may need FFmpeg:
-
-- **Windows**: Download from [ffmpeg.org](https://ffmpeg.org/download.html) or use `choco install ffmpeg`
-- **Linux**: `sudo apt-get install ffmpeg`
-- **macOS**: `brew install ffmpeg`
 
 ### Running the Application
 
@@ -77,33 +69,29 @@ The application will open in your browser at `http://localhost:8501`
 
 ### Web Interface (Streamlit)
 
-1. **Upload Audio**: Click "Upload a disaster report audio file" and select your audio file
-2. **Or Record**: Use the microphone input to record directly
-3. **Process**: Click "🚀 Process Voice → Summaries"
-4. **View Results**: See transcribed text and three levels of summaries
+1. **Enter Text**: Paste or type your disaster report text in the text area
+2. **Configure**: Select BART or T5 model in the sidebar (optional)
+3. **Generate**: Click "🚀 Generate Summaries"
+4. **View Results**: See three levels of summaries (Alert, Short, Detailed)
 5. **Download**: Save all summaries as a text file
 
 ### Input/Output Specifications
 
 #### **INPUT:**
 
-- **Audio Files**: WAV, MP3, M4A, FLAC, OGG formats
-- **Duration**: 10 seconds to 10 minutes (recommended)
-- **Quality**: Clear audio with minimal background noise
-- **Text Input** (for summarization only): 100-5000 characters
+- **Text Input**: Plain text disaster report
+- **Recommended Length**: 100-5000 characters
+- **Format**: Any text format (will be processed as plain text)
 
 #### **OUTPUT:**
 
-1. **Transcribed Text** (`str`): Full transcription of the audio
-2. **Alert Summary** (`str`): 1-line emergency notification (8-20 words)
-3. **Short Public Summary** (`str`): Media/public brief (25-60 words)
-4. **Detailed Response Summary** (`str`): Comprehensive summary (60-150 words)
+1. **Alert Summary** (`str`): 1-line emergency notification (8-20 words)
+2. **Short Public Summary** (`str`): Media/public brief (25-60 words)
+3. **Detailed Response Summary** (`str`): Comprehensive summary (60-150 words)
 
 **Example Output:**
 
 ```
-Transcribed: "A severe earthquake measuring 7.2 on the Richter scale..."
-
 Alert: "7.2 magnitude earthquake hits northern region, 5 fatalities, 50 injured..."
 
 Short: "A 7.2 magnitude earthquake struck the northern region early this morning,
@@ -123,31 +111,34 @@ deployed. At least 50 people injured, 5 confirmed fatalities. Hospitals on high 
 
 ### Command Line Usage
 
-#### Speech-to-Text Only
-
-```python
-from src.models.speech_to_text import transcribe_audio
-
-text = transcribe_audio("disaster_report.wav")
-print(text)
-```
-
-#### Summarization Only
+#### Text Summarization
 
 ```python
 from src.models.summarizer import generate_all_summaries
 
+# Generate all three summary levels
 alert, short, detailed = generate_all_summaries(
     "Long disaster report text here..."
 )
+
+print("Alert:", alert)
+print("Short:", short)
+print("Detailed:", detailed)
 ```
 
-#### Complete Pipeline
+#### Using the Summarizer Class
 
 ```python
-from src.pipeline import voice_to_summary
+from src.models.summarizer import DisasterSummarizer
 
-transcribed, alert, short, detailed = voice_to_summary("disaster_report.wav")
+# Initialize with BART (default)
+summarizer = DisasterSummarizer()
+
+# Or use T5
+summarizer = DisasterSummarizer(use_t5=True, model_name="t5-base")
+
+# Generate summaries
+alert, short, detailed = summarizer.generate_all_summaries(text)
 ```
 
 ## 🏗️ Project Structure
@@ -178,16 +169,6 @@ BART-T5-Summarization-for-Disaster-Reports/
 ```
 
 ## 🔧 Configuration
-
-### Whisper Models
-
-Available model sizes (larger = more accurate, slower):
-
-- `tiny`: Fastest, least accurate
-- `base`: **Recommended** - Good balance
-- `small`: Better accuracy
-- `medium`: High accuracy
-- `large`: Best accuracy, slowest
 
 ### Summarization Models
 
@@ -223,23 +204,13 @@ Rate summaries on:
 
 ## 🧪 Testing
 
-### Test Speech-to-Text
-
-```bash
-python src/models/speech_to_text.py sample_audio.wav
-```
-
 ### Test Summarization
 
 ```bash
 python src/models/summarizer.py
 ```
 
-### Test Complete Pipeline
-
-```bash
-python src/pipeline.py sample_audio.wav
-```
+This will test summarization with sample disaster report text.
 
 ## 🎯 Use Cases
 
@@ -285,8 +256,8 @@ Emergency Outputs (Alert, Short, Detailed)
 
 - **First Run**: Models download automatically (~1-2 GB)
 - **Processing Time**:
-  - Whisper transcription: ~1-2x audio duration
-  - Summarization: ~5-10 seconds per summary
+  - Summarization: ~5-10 seconds per summary level
+  - Total: ~15-30 seconds for all 3 summaries
 - **Memory**: ~4-8 GB RAM recommended
 - **GPU**: Optional but recommended for faster processing
 
@@ -311,7 +282,6 @@ Emergency Outputs (Alert, Short, Detailed)
 
 ## 🙏 Acknowledgments
 
-- OpenAI Whisper for speech recognition
 - HuggingFace Transformers for BART/T5 models
 - Streamlit for web interface
 
@@ -324,11 +294,11 @@ Emergency Outputs (Alert, Short, Detailed)
 - [ ] Fine-tuning on disaster report datasets
 - [ ] Keyword extraction for alerts
 - [ ] Multi-language support
-- [ ] Real-time streaming transcription
-- [ ] Mobile app integration
+- [ ] File upload support (PDF, DOCX, TXT)
 - [ ] API endpoint for integration
 - [ ] Advanced evaluation metrics
 - [ ] Model quantization for faster inference
+- [ ] Batch processing for multiple reports
 
 ---
 
