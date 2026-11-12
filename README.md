@@ -1,305 +1,83 @@
-# 📝 BART/T5 Summarization for Disaster Reports
+# Voice-driven disaster report summarization (BART / T5)
 
-**Text → BART/T5 → Multi-Level Summaries**
+Disaster reports are long, and the people who read them need different things. A responder needs the details, a news desk needs a paragraph, and a phone alert needs one line. This project takes a report, typed or spoken, and writes all three at once with a transformer summarization model.
 
-A production-ready NLP system that transforms disaster report text into actionable multi-level summaries using state-of-the-art transformer models (BART/T5).
+Research title: *Voice-Driven Multi-Granularity Summarization of Disaster Reports using Transformer Models.*
 
-## 🌟 Features
+## What it produces
 
-- **📝 Text Input**: Paste or type disaster report text
-- **📝 Multi-Level Summarization**:
-  - 🔔 **1-line Alert**: Emergency notification
-  - 📰 **Short Public Summary**: Media/public brief
-  - 🚨 **Detailed Response Summary**: For emergency response teams
-- **🤖 Transformer Models**: BART or T5 for summarization
-- **📊 Evaluation**: ROUGE metrics and human evaluation support
-- **💻 Web UI**: Beautiful Streamlit interface for easy demo
+| Level | Length | For |
+|---|---|---|
+| Alert | 8 to 20 words | A one-line emergency notification |
+| Short public summary | 25 to 60 words | Media and public briefings |
+| Detailed response summary | 60 to 150 words | Emergency response teams |
 
-## 🧱 System Architecture
+Example, from an earthquake report:
 
 ```
-Text Input (Disaster Report)
-        ↓
-Text Preprocessing & Cleaning
-        ↓
-T5 / BART Summarization
-        ↓
-Multi-Level Summaries
-        ├── Alert (1-line)
-        ├── Short Public Summary
-        └── Detailed Response Summary
+Alert:    7.2 magnitude earthquake hits northern region, 5 fatalities, 50 injured...
+Short:    A 7.2 magnitude earthquake struck the northern region early this morning,
+          causing significant structural damage. Emergency services deployed,
+          5 fatalities, 50 injured reported.
+Detailed: A severe earthquake measuring 7.2 on the Richter scale struck the northern
+          region at 3:45 AM, with epicenter 15 km northeast of city center ...
 ```
 
-## 🚀 Quick Start
+## How it works
 
-### Installation
-
-1. **Clone the repository**
-
-```bash
-git clone <repository-url>
-cd BART-T5-Summarization-for-Disaster-Reports
+```
+Voice note ──► Whisper (speech to text) ──┐
+                                          ├─► clean text ─► BART or T5 ─► alert / short / detailed
+Typed report ─────────────────────────────┘                                   │
+                                                                   structured report (optional)
 ```
 
-2. **Create virtual environment** (recommended)
+1. `src/models/speech_to_text.py` transcribes audio with OpenAI Whisper (`base` by default; wav, mp3, m4a, flac and ogg are accepted).
+2. `src/models/summarizer.py` runs the same text through the summarizer three times with different length limits. BART (`facebook/bart-large-cnn`) is the default. T5 (`t5-base` or `t5-large`) is a config switch.
+3. `src/models/structured_report.py` turns the summaries into a structured, abstractive incident report.
+4. `src/utils/evaluation.py` scores output against reference summaries with ROUGE. The docs also include a 1 to 5 human rating sheet for relevance, conciseness and fluency.
+5. `app.py` is the Streamlit interface for typed reports: paste a report, pick a model, get the three summaries, and download them as a text file.
+
+Length limits, model names, the Whisper size and GPU use all live in `config.py`.
+
+## Run it
 
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. **Install dependencies**
-
-```bash
+venv\Scripts\activate        # macOS/Linux: source venv/bin/activate
 pip install -r requirements.txt
+streamlit run app.py         # opens http://localhost:8501
 ```
 
+The first run downloads the model weights from Hugging Face. The voice path (`src/pipeline.py`) also needs `pip install openai-whisper` and ffmpeg on your PATH.
 
-### Running the Application
-
-**Launch Streamlit UI:**
-
-```bash
-streamlit run app.py
-```
-
-The application will open in your browser at `http://localhost:8501`
-
-## 📖 Usage
-
-### Web Interface (Streamlit)
-
-1. **Enter Text**: Paste or type your disaster report text in the text area
-2. **Configure**: Select BART or T5 model in the sidebar (optional)
-3. **Generate**: Click "🚀 Generate Summaries"
-4. **View Results**: See three levels of summaries (Alert, Short, Detailed)
-5. **Download**: Save all summaries as a text file
-
-### Input/Output Specifications
-
-#### **INPUT:**
-
-- **Text Input**: Plain text disaster report
-- **Recommended Length**: 100-5000 characters
-- **Format**: Any text format (will be processed as plain text)
-
-#### **OUTPUT:**
-
-1. **Alert Summary** (`str`): 1-line emergency notification (8-20 words)
-2. **Short Public Summary** (`str`): Media/public brief (25-60 words)
-3. **Detailed Response Summary** (`str`): Comprehensive summary (60-150 words)
-
-**Example Output:**
-
-```
-Alert: "7.2 magnitude earthquake hits northern region, 5 fatalities, 50 injured..."
-
-Short: "A 7.2 magnitude earthquake struck the northern region early this morning,
-causing significant structural damage. Emergency services deployed, 5 fatalities,
-50 injured reported."
-
-Detailed: "A severe earthquake measuring 7.2 on the Richter scale struck the
-northern region at 3:45 AM, with epicenter 15 km northeast of city center.
-Significant structural damage reported to residential buildings. Emergency services
-deployed. At least 50 people injured, 5 confirmed fatalities. Hospitals on high alert."
-```
-
-📚 **For detailed documentation, see:**
-
-- **[DOCUMENTATION.md](DOCUMENTATION.md)** - Complete system documentation, API reference, troubleshooting
-- **[USAGE_EXAMPLES.md](USAGE_EXAMPLES.md)** - Real-world examples with expected outputs
-
-### Command Line Usage
-
-#### Text Summarization
-
-```python
-from src.models.summarizer import generate_all_summaries
-
-# Generate all three summary levels
-alert, short, detailed = generate_all_summaries(
-    "Long disaster report text here..."
-)
-
-print("Alert:", alert)
-print("Short:", short)
-print("Detailed:", detailed)
-```
-
-#### Using the Summarizer Class
+From Python:
 
 ```python
 from src.models.summarizer import DisasterSummarizer
 
-# Initialize with BART (default)
-summarizer = DisasterSummarizer()
-
-# Or use T5
-summarizer = DisasterSummarizer(use_t5=True, model_name="t5-base")
-
-# Generate summaries
-alert, short, detailed = summarizer.generate_all_summaries(text)
+summarizer = DisasterSummarizer()                      # BART
+# summarizer = DisasterSummarizer(use_t5=True, model_name="t5-base")
+alert, short, detailed = summarizer.generate_all_summaries(report_text)
 ```
 
-## 🏗️ Project Structure
+Run `python src/models/summarizer.py` for a quick test on a sample report, or `pytest tests/` for the basic test suite.
+
+## Project layout
 
 ```
-BART-T5-Summarization-for-Disaster-Reports/
-│
-├── app.py                          # Streamlit web application
-├── requirements.txt                # Python dependencies
-├── README.md                       # This file
-│
-├── src/
-│   ├── __init__.py
-│   ├── pipeline.py                 # Main pipeline: Voice → Summaries
-│   │
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── speech_to_text.py       # Whisper ASR module
-│   │   └── summarizer.py           # T5/BART summarization module
-│   │
-│   └── utils/
-│       ├── __init__.py
-│       └── evaluation.py           # ROUGE metrics & evaluation
-│
-├── data/                           # Dataset directory
-├── tests/                          # Test files
-└── venv/                           # Virtual environment (gitignored)
+app.py                     Streamlit UI
+config.py                  model names, summary lengths, audio formats
+example_usage.py           end-to-end usage examples
+src/pipeline.py            voice → text → summaries
+src/models/                speech_to_text, summarizer, structured_report
+src/utils/evaluation.py    ROUGE scoring
+tests/                     basic tests
+Report of disaster summary.pdf   project report
 ```
 
-## 🔧 Configuration
+More detail is in [DOCUMENTATION.md](DOCUMENTATION.md), [USAGE_EXAMPLES.md](USAGE_EXAMPLES.md) and [QUICKSTART.md](QUICKSTART.md).
 
-### Summarization Models
+## Stack
 
-**BART (Default)**:
-
-- `facebook/bart-large-cnn`: Best for news/summaries
-- `facebook/bart-base`: Faster, smaller
-
-**T5**:
-
-- `t5-base`: Base T5 model
-- `t5-large`: Larger T5 model
-
-## 📊 Evaluation
-
-### ROUGE Metrics
-
-```python
-from src.utils.evaluation import SummarizationEvaluator
-
-evaluator = SummarizationEvaluator()
-metrics = evaluator.compute_rouge(reference_summary, generated_summary)
-evaluator.print_metrics(metrics)
-```
-
-### Human Evaluation
-
-Rate summaries on:
-
-- **Relevance** (1-5): How relevant is the summary to the original?
-- **Conciseness** (1-5): Is it appropriately concise?
-- **Fluency** (1-5): Is it grammatically correct and fluent?
-
-## 🧪 Testing
-
-### Test Summarization
-
-```bash
-python src/models/summarizer.py
-```
-
-This will test summarization with sample disaster report text.
-
-## 🎯 Use Cases
-
-1. **Emergency Response**: Quick understanding of disaster situations
-2. **Media Briefings**: Generate public-facing summaries
-3. **Internal Reports**: Detailed summaries for response teams
-4. **Research**: Academic research on disaster reporting
-5. **Training**: Dataset creation and model fine-tuning
-
-## 🔬 Research & Innovation
-
-### Research Title
-
-**Voice-Driven Multi-Granularity Summarization of Disaster Reports using Transformer Models**
-
-### Key Innovations
-
-- ✅ Combining speech input with granular summarization levels
-- ✅ Optimizing summaries for different audiences:
-  - Public alert notifications
-  - Media briefs
-  - Response team coordination
-- ✅ End-to-end voice-to-summary pipeline
-- ✅ Real-world emergency domain application
-
-### Patent System Flow
-
-```
-Voice Input
-    ↓
-ASR (Automatic Speech Recognition)
-    ↓
-Noise Filtering & Preprocessing
-    ↓
-Domain NLP Pipeline
-    ↓
-Multi-tier Transformer Summarization
-    ↓
-Emergency Outputs (Alert, Short, Detailed)
-```
-
-## 📈 Performance Considerations
-
-- **First Run**: Models download automatically (~1-2 GB)
-- **Processing Time**:
-  - Summarization: ~5-10 seconds per summary level
-  - Total: ~15-30 seconds for all 3 summaries
-- **Memory**: ~4-8 GB RAM recommended
-- **GPU**: Optional but recommended for faster processing
-
-## 🛠️ Development
-
-### Team Roles
-
-- **Lead Dev (NLP + Integration)**: T5/BART summarizer, pipeline integration
-- **Research + Training**: Dataset prep, fine-tuning, evaluation metrics
-- **Frontend + Data**: Streamlit UI, dataset gathering, annotation support
-
-### 4-Week Timeline
-
-- **Week 1**: Setup, baseline summarizer, data collection
-- **Week 2**: Full pipeline integration, Streamlit demo, labeled dataset
-- **Week 3**: Fine-tuning, optimization, keyword extraction, evaluation
-- **Week 4**: Paper writing, patent diagrams, final polish
-
-## 📝 License
-
-[Specify your license here]
-
-## 🙏 Acknowledgments
-
-- HuggingFace Transformers for BART/T5 models
-- Streamlit for web interface
-
-## 📧 Contact
-
-[Add contact information]
-
-## 🔮 Future Enhancements
-
-- [ ] Fine-tuning on disaster report datasets
-- [ ] Keyword extraction for alerts
-- [ ] Multi-language support
-- [ ] File upload support (PDF, DOCX, TXT)
-- [ ] API endpoint for integration
-- [ ] Advanced evaluation metrics
-- [ ] Model quantization for faster inference
-- [ ] Batch processing for multiple reports
-
----
-
-**Built for Emergency Response and Disaster Management**
+Python, PyTorch, Hugging Face Transformers, OpenAI Whisper, rouge-score, Streamlit.
